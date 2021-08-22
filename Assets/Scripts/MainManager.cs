@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.IO;
 
 public class MainManager : MonoBehaviour
 {
@@ -11,6 +12,7 @@ public class MainManager : MonoBehaviour
     public Rigidbody Ball;
 
     public Text ScoreText;
+    public Text BestScoreText;
     public GameObject GameOverText;
     
     private bool m_Started = false;
@@ -36,6 +38,8 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
+
+        UpdateHighScoreText();
     }
 
     private void Update()
@@ -72,5 +76,67 @@ public class MainManager : MonoBehaviour
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+
+        if(m_Points > LoadHighScore())
+        {
+            SaveHighScore();
+        }
+
+        UpdateHighScoreText();
+    }
+
+    [System.Serializable]
+    class HighScore
+    {
+        public int highScore;
+        public string name;
+    }
+
+    public void SaveHighScore()
+    {
+        HighScore data = new HighScore();
+        data.highScore = m_Points;
+        data.name = PlayerNameHolder.Intance.GetPlayerName();
+
+        string json = JsonUtility.ToJson(data);
+
+        File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
+    }
+
+    public int LoadHighScore()
+    {
+        string path = Application.persistentDataPath + "/savefile.json";
+
+        if(File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            HighScore data = JsonUtility.FromJson<HighScore>(json);
+
+            return data.highScore;
+        }
+
+        return 0;
+    }
+
+    public string LoadHighScoreName()
+    {
+        string path = Application.persistentDataPath + "/savefile.json";
+
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            HighScore data = JsonUtility.FromJson<HighScore>(json);
+
+            return data.name;
+        }
+        else
+        {
+            return "-";
+        }
+    }
+
+    public void UpdateHighScoreText()
+    {
+        BestScoreText.text = "Best Score : " + LoadHighScoreName() + " : " + LoadHighScore().ToString();
     }
 }
